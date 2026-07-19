@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>♚ Lichess Ultimate Clone</title>
+
+    <!-- Libraries from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+
+    <style>
+        /* ─── RESET & GLOBAL ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #161512;
+            color: #bababa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app {
+            max-width: 1500px;
+            width: 100%;
+            background: #302e2b;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            padding: 24px 28px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+        }
+        /* ─── LEFT: BOARD ─── */
+        .board-section {
+            flex: 1 1 580px;
+            min-width: 340px;
+        }
+        .board-wrapper {
+            position: relative;
+            background: #262421;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: inset 0 0 0 1px #4a4744;
+        }
+        #board {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+        /* chessboard.js overrides (dynamic theme via class) */
+        .board-theme-green .white-1e1d7 {
+            background-color: #f0d9b5;
+        }
+        .board-theme-green .black-3c85d {
+            background-color: #b58863;
+        }
+        .board-theme-blue .white-1e1d7 {
+            background-color: #dee3e6;
+        }
+        .board-theme-blue .black-3c85d {
+            background-color: #8ca2ad;
+        }
+        .board-theme-brown .white-1e1d7 {
+            background-color: #f0d9b5;
+        }
+        .board-theme-brown .black-3c85d {
+            background-color: #b58863;
+        }
+        .board-theme-grey .white-1e1d7 {
+            background-color: #d0d0d0;
+        }
+        .board-theme-grey .black-3c85d {
+            background-color: #808080;
+        }
+        .chessboard-1-0-0 .highlight1-32417 {
+            background-color: rgba(255, 255, 100, 0.4);
+        }
+        .chessboard-1-0-0 .highlight2-9c5d2 {
+            background-color: rgba(255, 100, 100, 0.3);
+        }
+        .chessboard-1-0-0 .square-55d63 {
+            position: relative;
+        }
+        .chessboard-1-0-0 .piece-417db {
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        /* Coordinates */
+        .board-wrapper .coords {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+        .board-wrapper .coords.files {
+            bottom: 2px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .board-wrapper .coords.ranks {
+            top: 10px;
+            bottom: 10px;
+            left: 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 10px;
+        }
+        /* ─── BOTTOM BAR ─── */
+        .board-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+            align-items: center;
+        }
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: #3d3a36;
+            border: none;
+            color: #ddd;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn:hover {
+            background: #4f4b46;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-primary {
+            background: #629924;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #74ac2e;
+        }
+        .btn-danger {
+            background: #b33a3a;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #cc4444;
+        }
+        .btn-warning {
+            background: #b8860b;
+            color: #fff;
+        }
+        .btn-warning:hover {
+            background: #d49a12;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #4a4744;
+        }
+        .btn-outline:hover {
+            background: #3d3a36;
+        }
+        .btn-sm {
+            font-size: 12px;
+            padding: 4px 10px;
+        }
+        .status-badge {
+            background: #3d3a36;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #ddd;
+            border: 1px solid #4a4744;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+        .status-badge .highlight {
+            color: #ffd966;
+        }
+        select,
+        input[type="number"] {
+            background: #3d3a36;
+            border: 1px solid #4a4744;
+            color: #ddd;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        select:hover,
+        input:hover {
+            border-color: #6a8cff;
+        }
+        /* ─── RIGHT SIDEBAR ─── */
+        .sidebar {
+            flex: 0 0 340px;
+            min-width: 260px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .player {
+            background: #2a2825;
+            border-radius: 8px;
+            padding: 10px 14px;
+            border-left: 4px solid #629924;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .player.black-player {
+            border-left-color: #888;
+        }
+        .player .info {
+            display: flex;
+            flex-direction: column;
+        }
+        .player .name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #eee;
+        }
+        .player .rating {
+            font-size: 12px;
+            color: #999;
+        }
+        .player .clock {
+            font-size: 24px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            background: #1e1c1a;
+            padding: 2px 12px;
+            border-radius: 4px;
+            color: #ddd;
+            min-width: 80px;
+            text-align: center;
+        }
+        .player .clock.low {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        .player.active .clock {
+            color: #ffd966;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+        /* Moves panel */
+        .moves-panel {
+            background: #2a2825;
+            border-radius: 8px;
+            padding: 10px 14px;
+            flex: 1;
+            min-height: 180px;
+            max-height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+        .moves-panel .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #999;
+            font-weight: 500;
+        }
+        .moves-panel .header .actions button {
+            background: none;
+            border: none;
+            color: #6a8cff;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .moves-panel .header .actions button:hover {
+            color: #8aa4ff;
+            text-decoration: underline;
+        }
+        .moves-list {
+            overflow-y: auto;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+            padding-right: 4px;
+        }
+        .moves-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .moves-list::-webkit-scrollbar-track {
+            background: #1e1c1a;
+        }
+        .moves-list::-webkit-scrollbar-thumb {
+            background: #4a4744;
+            border-radius: 4px;
+        }
+        .move-row {
+            display: flex;
+            gap: 8px;
+            padding: 1px 0;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .move-row:hover {
+            background: #3d3a36;
+        }
+        .move-row .move-num {
+            color: #666;
+            min-width: 28px;
+            text-align: right;
+            font-weight: 400;
+        }
+        .move-row .move-text {
+            color: #ddd;
+            font-weight: 400;
+        }
+        .move-row .move-text.white-move {
+            color: #eee;
+        }
+        .move-row .move-text.black-move {
+            color: #aaa;
+        }
+        .move-row .move-text.current {
+            background: #62992433;
+            border-radius: 2px;
+            padding: 0 4px;
+        }
+        /* Analysis box */
+        .analysis-box {
+            background: #1e1c1a;
+            border-radius: 6px;
+            padding: 10px 12px;
+            min-height: 70px;
+            font-size: 13px;
+            color: #aaa;
+            overflow-y: auto;
+            max-height: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .analysis-box .eval {
+            color: #ffd966;
+            font-weight: 600;
+        }
+        .analysis-box .best-move {
+            color: #6a8cff;
+        }
+        .analysis-box .line {
+            color: #888;
+            font-size: 12px;
+        }
+        /* Promotion dialog */
+        .promotion-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .promotion-dialog.active {
+            display: flex;
+        }
+        .promotion-choices {
+            background: #302e2b;
+            border-radius: 12px;
+            padding: 20px 30px;
+            display: flex;
+            gap: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+        }
+        .promotion-choices .piece-choice {
+            width: 72px;
+            height: 72px;
+            background: #262421;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border 0.2s, transform 0.1s;
+        }
+        .promotion-choices .piece-choice:hover {
+            border-color: #629924;
+            transform: scale(1.05);
+        }
+        .promotion-choices .piece-choice img {
+            width: 60px;
+            height: 60px;
+        }
+        /* Import PGN Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #302e2b;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+        }
+        .modal-box textarea {
+            width: 100%;
+            height: 200px;
+            background: #1e1c1a;
+            border: 1px solid #4a4744;
+            color: #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .modal-box .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            justify-content: flex-end;
+        }
+        /* Responsive */
+        @media (max-width: 820px) {
+            .app {
+                flex-direction: column;
+                padding: 16px;
+            }
+            .sidebar {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+            .moves-panel {
+                max-height: 150px;
+                min-height: 100px;
+            }
+            .board-section {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+            .status-badge {
+                margin-left: 0;
+                width: 100%;
+                text-align: center;
+            }
+            .board-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-group {
+                justify-content: center;
+            }
+        }
+        @media (max-width: 480px) {
+            .app {
+                padding: 10px;
+                border-radius: 8px;
+            }
+            .player .clock {
+                font-size: 18px;
+                min-width: 60px;
+                padding: 2px 8px;
+            }
+            .btn {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            .promotion-choices .piece-choice {
+                width: 56px;
+                height: 56px;
+            }
+            .promotion-choices .piece-choice img {
+                width: 44px;
+                height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app" id="app">
+        <!-- ─── LEFT ─── -->
+        <div class="board-section">
+            <div class="board-wrapper" id="boardWrapper">
+                <div id="board"></div>
+                <div class="coords files" id="fileCoords"></div>
+                <div class="coords ranks" id="rankCoords"></div>
+            </div>
+            <div class="board-controls">
+                <div class="btn-group">
+                    <button class="btn" id="btnFlip">🔄 Flip</button>
+                    <button class="btn" id="btnUndo">↩ Undo</button>
+                    <button class="btn btn-danger" id="btnResign">🏳 Resign</button>
+                    <button class="btn btn-warning" id="btnDraw">🤝 Draw</button>
+                    <button class="btn btn-primary" id="btnNew">✕ New</button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline btn-sm" id="btnPGN">📋 PGN</button>
+                    <button class="btn btn-outline btn-sm" id="btnImportPGN">📥 Import</button>
+                    <button class="btn btn-outline btn-sm" id="btnAnalyze">🔍 Analyze</button>
+                </div>
+                <div class="status-badge" id="statusBadge">
+                    <span class="highlight">●</span> White to move
+                </div>
+            </div>
+            <!-- Settings row -->
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; align-items:center;">
+                <label style="font-size:13px;color:#999;">Time:</label>
+                <select id="timeControl" style="background:#3d3a36;border:1px solid #4a4744;color:#ddd;padding:4px 8px;border-radius:4px;font-size:13px;">
+                    <option value="60,0">Bullet (1+0)</option>
+                    <option value="180,2" selected>Blitz (3+2)</option>
+                    <option value="600,0">Rapid (10+0)</option>
+                    <option value="900,15">Classical (15+10)</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <span id="customTimeInputs" style="display:none;gap:6px;align-items:center;">
+                    <input type="number" id="minutesInput" placeholder="Min" value="10" min="1" style="width:60px;background:#3d3a36;border:1px solid #4a4744;color:#ddd;padding:4px;border-radius:4px;">
+                    <input type="number" id="incrementInput" placeholder="Inc" value="5" min="0" style="width:60px;background:#3d3a36;border:1px solid #4a4744;color:#ddd;padding:4px;border-radius:4px;">
+                </span>
+                <label style="font-size:13px;color:#999;">AI Level:</label>
+                <select id="aiLevel" style="background:#3d3a36;border:1px solid #4a4744;color:#ddd;padding:4px 8px;border-radius:4px;font-size:13px;">
+                    <option value="1">1 (Easy)</option>
+                    <option value="5">5 (Medium)</option>
+                    <option value="10" selected>10 (Hard)</option>
+                    <option value="15">15 (Expert)</option>
+                    <option value="20">20 (Stockfish)</option>
+                </select>
+                <label style="font-size:13px;color:#999;">Theme:</label>
+                <select id="themeSelect" style="background:#3d3a36;border:1px solid #4a4744;color:#ddd;padding:4px 8px;border-radius:4px;font-size:13px;">
+                    <option value="merida">Merida</option>
+                    <option value="alpha">Alpha</option>
+                    <option value="cburnett">CBurnett</option>
+                    <option value="chesnut">Chesnut</option>
+                </select>
+                <select id="boardColor" style="background:#3d3a36;border:1px solid #4a4744;color:#ddd;padding:4px 8px;border-radius:4px;font-size:13px;">
+                    <option value="green">Green</option>
+                    <option value="blue">Blue</option>
+                    <option value="brown">Brown</option>
+                    <option value="grey">Grey</option>
+                </select>
+                <button class="btn btn-outline btn-sm" id="btnApplyTheme">Apply</button>
+            </div>
+        </div>
+
+        <!-- ─── RIGHT ─── -->
+        <div class="sidebar">
+            <!-- White -->
+            <div class="player active" id="whitePlayer">
+                <div class="info">
+                    <span class="name">♔ White (You)</span>
+                    <span class="rating">Rating 1847</span>
+                </div>
+                <div class="clock" id="whiteClock">10:00</div>
+            </div>
+            <!-- Black -->
+            <div class="player black-player" id="blackPlayer">
+                <div class="info">
+                    <span class="name">♚ Black (AI)</span>
+                    <span class="rating">Stockfish 10</span>
+                </div>
+                <div class="clock" id="blackClock">10:00</div>
+            </div>
+
+            <!-- Moves -->
+            <div class="moves-panel">
+                <div class="header">
+                    <span>Moves (<span id="moveCount">0</span>)</span>
+                    <div class="actions">
+                        <button id="btnScrollToEnd">⤵</button>
+                    </div>
+                </div>
+                <div class="moves-list" id="movesList"></div>
+            </div>
+
+            <!-- Analysis / Engine -->
+            <div class="analysis-box" id="analysisBox">
+                <p>♟ Make a move to see analysis.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion Dialog -->
+    <div class="promotion-dialog" id="promotionDialog">
+        <div class="promotion-choices" id="promotionChoices"></div>
+    </div>
+
+    <!-- Import PGN Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal-box">
+            <h3 style="color:#eee;margin-bottom:10px;">Import PGN</h3>
+            <textarea id="pgnInput" placeholder="Paste PGN here..."></textarea>
+            <div class="actions">
+                <button class="btn" id="importCancel">Cancel</button>
+                <button class="btn btn-primary" id="importConfirm">Load Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ──────────────────────────────────────────────
+        //  ULTIMATE LICHESS CLONE - FULL FEATURES
+        // ──────────────────────────────────────────────
+
+        // ── DOM refs ──
+        const boardEl = document.getElementById('board');
+        const statusBadge = document.getElementById('statusBadge');
+        const movesListEl = document.getElementById('movesList');
+        const moveCountEl = document.getElementById('moveCount');
+        const whiteClockEl = document.getElementById('whiteClock');
+        const blackClockEl = document.getElementById('blackClock');
+        const whitePlayerEl = document.getElementById('whitePlayer');
+        const blackPlayerEl = document.getElementById('blackPlayer');
+        const analysisBox = document.getElementById('analysisBox');
+        const promotionDialog = document.getElementById('promotionDialog');
+        const promotionChoices = document.getElementById('promotionChoices');
+        const importModal = document.getElementById('importModal');
+        const pgnInput = document.getElementById('pgnInput');
+
+        // ── Game state ──
+        let game = new Chess();
+        let board = null;
+        let moveHistory = [];
+        let gameOver = false;
+        let currentTurn = 'w';
+        let whiteTime = 180; // seconds
+        let blackTime = 180;
+        let increment = 2;
+        let clockInterval = null;
+        let stockfish = null;
+        let analysisMode = false;
+        let isAIThinking = false;
+        let aiLevel = 10;
+        let aiColor = 'b'; // AI plays black
+        let playerColor = 'w';
+        let moveSoundEnabled = true;
+        let lastMove = null;
+
+        // ── Clocks ──
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function updateClocks() {
+            whiteClockEl.textContent = formatTime(whiteTime);
+            blackClockEl.textContent = formatTime(blackTime);
+            whiteClockEl.classList.toggle('low', whiteTime < 60);
+            blackClockEl.classList.toggle('low', blackTime < 60);
+        }
+
+        function stopClock() {
+            if (clockInterval) {
+                clearInterval(clockInterval);
+                clockInterval = null;
+            }
+        }
+
+        function startClock() {
+            stopClock();
+            clockInterval = setInterval(() => {
+                if (gameOver) {
+                    stopClock();
+                    return;
+                }
+                if (currentTurn === 'w') {
+                    whiteTime = Math.max(0, whiteTime - 1);
+                } else {
+                    blackTime = Math.max(0, blackTime - 1);
+                }
+                updateClocks();
+                if (whiteTime === 0 || blackTime === 0) {
+                    stopClock();
+                    const winner = whiteTime === 0 ? 'Black' : 'White';
+                    statusBadge.innerHTML = `<span style="color:#e74c3c;">⏰</span> ${winner} wins on time!`;
+                    gameOver = true;
+                    playSound('gameEnd');
+                }
+            }, 1000);
+        }
+
+        function switchClock() {
+            currentTurn = game.turn();
+            whitePlayerEl.classList.toggle('active', currentTurn === 'w');
+            blackPlayerEl.classList.toggle('active', currentTurn === 'b');
+            if (!gameOver) startClock();
+        }
+
+        function addIncrement(color) {
+            if (color === 'w') whiteTime += increment;
+            else blackTime += increment;
+            updateClocks();
+        }
+
+        // ── Board config ──
+        const pieceThemeMap = {
+            merida: 'https://lichess1.org/assets/piece/merida/',
+            alpha: 'https://lichess1.org/assets/piece/alpha/',
+            cburnett: 'https://lichess1.org/assets/piece/cburnett/',
+            chesnut: 'https://lichess1.org/assets/piece/chesnut/'
+        };
+        let currentPieceSet = 'merida';
+
+        function getPieceTheme(piece) {
+            const codes = {
+                wP: 'wP',
+                wN: 'wN',
+                wB: 'wB',
+                wR: 'wR',
+                wQ: 'wQ',
+                wK: 'wK',
+                bP: 'bP',
+                bN: 'bN',
+                bB: 'bB',
+                bR: 'bR',
+                bQ: 'bQ',
+                bK: 'bK'
+            };
+            const code = codes[piece] || 'wP';
+            return `${pieceThemeMap[currentPieceSet]}${code}.svg`;
+        }
+
+        function initBoard() {
+            if (board) board.destroy();
+            const config = {
+                draggable: true,
+                position: 'start',
+                onDragStart: onDragStart,
+                onDrop: onDrop,
+                onSnapEnd: onSnapEnd,
+                pieceTheme: getPieceTheme
+            };
+            board = Chessboard('board', config);
+            applyBoardColor();
+        }
+
+        // ── Board color ──
+        function applyBoardColor() {
+            const color = document.getElementById('boardColor').value;
+            const wrapper = document.getElementById('boardWrapper');
+            wrapper.className = 'board-wrapper board-theme-' + color;
+        }
+
+        // ── Sounds ──
+        function playSound(type) {
+            if (!moveSoundEnabled) return;
+            try {
+                const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                gain.gain.value = 0.1;
+                if (type === 'move') {
+                    osc.frequency.value = 600;
+                    osc.start();
+                    setTimeout(() => osc.stop(), 100);
+                } else if (type === 'capture') {
+                    osc.frequency.value = 300;
+                    osc.start();
+                    setTimeout(() => osc.stop(), 150);
+                } else if (type === 'check') {
+                    osc.frequency.value = 900;
+                    osc.start();
+                    setTimeout(() => osc.stop(), 200);
+                } else if (type === 'gameEnd') {
+                    osc.frequency.value = 200;
+                    osc.start();
+                    setTimeout(() => {
+                        osc.frequency.value = 400;
+                        setTimeout(() => osc.stop(), 200);
+                    }, 200);
+                }
+            } catch (e) { /* silent */ }
+        }
+
+        // ── Drag & Drop ──
+        function onDragStart(source, piece) {
+            if (gameOver) return false;
+            if (isAIThinking) return false;
+            if (game.turn() !== playerColor) return false; // only player's turn
+            if (game.turn() === 'w' && piece.search(/^b/) !== -1) return false;
+            if (game.turn() === 'b' && piece.search(/^w/) !== -1) return false;
+            return true;
+        }
+
+        function onDrop(source, target) {
+            // Check promotion
+            const piece = game.get(source);
+            if (piece && piece.type === 'p') {
+                const row = target[1];
+                if ((piece.color === 'w' && row === '8') || (piece.color === 'b' && row === '1')) {
+                    showPromotionDialog(source, target);
+                    return 'snapback';
+                }
+            }
+            // Normal move
+            const move = game.move({
+                from: source,
+                to: target,
+                promotion: 'q'
+            });
+            if (move === null) return 'snapback';
+            handleMove(move);
+            return;
+        }
+
+        function onSnapEnd() {
+            // highlight legal moves
+            highlightLegalMoves();
+        }
+
+        // ── Promotion Dialog ──
+        function showPromotionDialog(source, target) {
+            promotionDialog.classList.add('active');
+            promotionChoices.innerHTML = '';
+            const color = game.turn();
+            const pieces = ['q', 'r', 'b', 'n'];
+            pieces.forEach(p => {
+                const img = document.createElement('img');
+                const code = color === 'w' ? `w${p.toUpperCase()}` : `b${p.toUpperCase()}`;
+                img.src = getPieceTheme(code);
+                img.alt = p;
+                img.style.width = '60px';
+                img.style.height = '60px';
+                const div = document.createElement('div');
+                div.className = 'piece-choice';
+                div.appendChild(img);
+                div.addEventListener('click', () => {
+                    promotionDialog.classList.remove('active');
+                    const move = game.move({
+                        from: source,
+                        to: target,
+                        promotion: p
+                    });
+                    if (move) handleMove(move);
+                    else board.position(game.fen());
+                });
+                promotionChoices.appendChild(div);
+            });
+        }
+
+        // ── Handle move ──
+        function handleMove(move) {
+            lastMove = move;
+            moveHistory.push(move);
+            board.position(game.fen());
+            renderMoves();
+            updateStatus();
+            addIncrement(move.color);
+            switchClock();
+            updateClocks();
+
+            // Sound
+            if (game.in_check()) playSound('check');
+            else if (move.captured) playSound('capture');
+            else playSound('move');
+
+            // Check game over
+            if (game.game_over()) {
+                stopClock();
+                gameOver = true;
+                let msg = '';
+                if (game.in_checkmate()) {
+                    const winner = game.turn() === 'w' ? 'Black' : 'White';
+                    msg = `♚ ${winner} wins by checkmate!`;
+                    playSound('gameEnd');
+                } else if (game.in_draw()) {
+                    msg = '🤝 Draw!';
+                    playSound('gameEnd');
+                } else if (game.in_stalemate()) {
+                    msg = '🤝 Stalemate!';
+                    playSound('gameEnd');
+                } else {
+                    msg = '🏁 Game over.';
+                }
+                statusBadge.innerHTML = msg;
+                return;
+            }
+
+            // Update analysis
+            if (analysisMode) runStockfishAnalysis();
+
+            // AI move if it's AI's turn
+            if (!gameOver && game.turn() === aiColor) {
+                scheduleAIMove();
+            }
+        }
+
+        // ── AI Move ──
+        function scheduleAIMove() {
+            if (isAIThinking) return;
+            isAIThinking = true;
+            statusBadge.innerHTML = '<span style="color:#6a8cff;">🤖 AI thinking...</span>';
+            setTimeout(() => {
+                if (gameOver || game.turn() !== aiColor) {
+                    isAIThinking = false;
+                    return;
+                }
+                const level = parseInt(document.getElementById('aiLevel').value);
+                const depth = Math.min(level, 20);
+                const moves = game.moves({ verbose: true });
+                if (moves.length === 0) {
+                    isAIThinking = false;
+                    return;
+                }
+                // Use Stockfish for best move if level > 1, else random
+                if (depth > 1) {
+                    // Use stockfish to pick move
+                    if (!stockfish) initStockfish();
+                    stockfish.postMessage('ucinewgame');
+                    stockfish.postMessage('position fen ' + game.fen());
+                    stockfish.postMessage(`go depth ${depth}`);
+                    // We'll handle the result via event
+                    // Store callback
+                    window._aiResolve = (move) => {
+                        isAIThinking = false;
+                        if (move && !gameOver) {
+                            const result = game.move(move);
+                            if (result) handleMove(result);
+                            else {
+                                // fallback random
+                                const rand = moves[Math.floor(Math.random() * moves.length)];
+                                const fallback = game.move(rand);
+                                if (fallback) handleMove(fallback);
+                            }
+                        } else {
+                            // random fallback
+                            const rand = moves[Math.floor(Math.random() * moves.length)];
+                            const fallback = game.move(rand);
+                            if (fallback) handleMove(fallback);
+                        }
+                    };
+                    // Also set a timeout in case stockfish doesn't respond
+                    setTimeout(() => {
+                        if (isAIThinking) {
+                            isAIThinking = false;
+                            // random move
+                            const rand = moves[Math.floor(Math.random() * moves.length)];
+                            const fallback = game.move(rand);
+                            if (fallback) handleMove(fallback);
+                        }
+                    }, 3000);
+                    return;
+                } else {
+                    // Random move for level 1
+                    const rand = moves[Math.floor(Math.random() * moves.length)];
+                    const result = game.move(rand);
+                    isAIThinking = false;
+                    if (result) handleMove(result);
+                }
+            }, 300);
+        }
+
+        // ── Stockfish integration ──
+        function initStockfish() {
+            if (!stockfish) {
+                stockfish = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+                stockfish.onmessage = function(event) {
+                    const line = event.data;
+                    // AI move
+                    if (line.startsWith('bestmove')) {
+                        const parts = line.split(' ');
+                        const move = parts[1];
+                        if (window._aiResolve) {
+                            const cb = window._aiResolve;
+                            window._aiResolve = null;
+                            cb(move);
+                        }
+                    }
+                    // Analysis
+                    if (analysisMode && line.startsWith('info depth')) {
+                        const parts = line.split(' ');
+                        let score = '';
+                        let bestMove = '';
+                        for (let i = 0; i < parts.length; i++) {
+                            if (parts[i] === 'score') {
+                                score = parts[i + 2]; // cp or mate
+                            }
+                            if (parts[i] === 'pv') {
+                                bestMove = parts.slice(i + 1, i + 6).join(' ');
+                                break;
+                            }
+                        }
+                        if (score) {
+                            const evalText = score.startsWith('mate') ? `#${score.split(' ')[1]}` :
+                                `${(parseInt(score) / 100).toFixed(2)}`;
+                            analysisBox.innerHTML = `
+                                    <div><span class="eval">Eval: ${evalText}</span></div>
+                                    <div><span class="best-move">Best: ${bestMove || '...'}</span></div>
+                                    <div class="line">${line}</div>
+                                `;
+                        }
+                    }
+                };
+            }
+        }
+
+        function runStockfishAnalysis() {
+            if (!analysisMode) {
+                analysisBox.innerHTML = '<p>🔍 Analysis disabled.</p>';
+                return;
+            }
+            if (!stockfish) initStockfish();
+            stockfish.postMessage('ucinewgame');
+            stockfish.postMessage('position fen ' + game.fen());
+            stockfish.postMessage('go movetime 1500');
+        }
+
+        // ── Status ──
+        function updateStatus() {
+            if (gameOver) return;
+            const turn = game.turn() === 'w' ? 'White' : 'Black';
+            let extra = '';
+            if (game.in_check()) extra = ' (Check!)';
+            statusBadge.innerHTML = `<span class="highlight">●</span> ${turn} to move${extra}`;
+        }
+
+        // ── Moves list ──
+        function renderMoves() {
+            movesListEl.innerHTML = '';
+            const history = game.history({ verbose: true });
+            let html = '';
+            for (let i = 0; i < history.length; i += 2) {
+                const num = Math.floor(i / 2) + 1;
+                const w = history[i];
+                const b = history[i + 1];
+                const wSan = w ? w.san : '';
+                const bSan = b ? b.san : '';
+                const wClass = (i === history.length - 1 && game.turn() === 'b') ? ' current' : '';
+                const bClass = (i + 1 === history.length - 1 && game.turn() === 'w') ? ' current' : '';
+                html += `<div class="move-row" data-index="${i}">
+                            <span class="move-num">${num}.</span>
+                            <span class="move-text white-move${wClass}">${wSan}</span>
+                            <span class="move-text black-move${bClass}">${bSan}</span>
+                         </div>`;
+            }
+            movesListEl.innerHTML = html;
+            // Click to jump
+            document.querySelectorAll('.move-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    const history = game.history({ verbose: true });
+                    if (idx >= history.length) return;
+                    const tmp = new Chess();
+                    for (let i = 0; i <= idx; i++) {
+                        const m = history[i];
+                        if (m) tmp.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+                    }
+                    board.position(tmp.fen());
+                    // update last move highlight manually
+                });
+            });
+            moveCountEl.textContent = history.length;
+            // scroll to bottom
+            movesListEl.scrollTop = movesListEl.scrollHeight;
+        }
+
+        // ── Highlight legal moves ──
+        function highlightLegalMoves() {
+            // Clear previous highlights
+            const squares = document.querySelectorAll('.square-55d63');
+            squares.forEach(sq => {
+                sq.classList.remove('highlight1-32417', 'highlight2-9c5d2');
+            });
+            // Show legal moves for selected square
+            if (selectedSquare) {
+                const moves = game.moves({ square: selectedSquare, verbose: true });
+                moves.forEach(m => {
+                    const el = document.querySelector(`[data-square="${m.to}"]`);
+                    if (el) el.classList.add('highlight1-32417');
+                });
+                // Highlight last move
+                if (lastMove) {
+                    const fromEl = document.querySelector(`[data-square="${lastMove.from}"]`);
+                    const toEl = document.querySelector(`[data-square="${lastMove.to}"]`);
+                    if (fromEl) fromEl.classList.add('highlight2-9c5d2');
+                    if (toEl) toEl.classList.add('highlight2-9c5d2');
+                }
+            }
+        }
+
+        // ── Reset ──
+        function resetGame() {
+            stopClock();
+            game = new Chess();
+            moveHistory = [];
+            gameOver = false;
+            lastMove = null;
+            selectedSquare = null;
+            isAIThinking = false;
+            // Set time from control
+            const control = document.getElementById('timeControl').value;
+            if (control === 'custom') {
+                const mins = parseInt(document.getElementById('minutesInput').value) || 10;
+                const inc = parseInt(document.getElementById('incrementInput').value) || 0;
+                whiteTime = mins * 60;
+                blackTime = mins * 60;
+                increment = inc;
+            } else {
+                const parts = control.split(',').map(Number);
+                whiteTime = parts[0];
+                blackTime = parts[0];
+                increment = parts[1] || 0;
+            }
+            currentTurn = 'w';
+            updateClocks();
+            board.position('start');
+            renderMoves();
+            updateStatus();
+            whitePlayerEl.classList.add('active');
+            blackPlayerEl.classList.remove('active');
+            startClock();
+            statusBadge.innerHTML = `<span class="highlight">●</span> White to move`;
+            analysisBox.innerHTML = '<p>♟ Make a move to see analysis.</p>';
+            if (stockfish) stockfish.postMessage('stop');
+            // If AI is black and it's black's turn, schedule AI move
+            if (aiColor === 'b' && game.turn() === 'b' && !gameOver) {
+                scheduleAIMove();
+            }
+        }
+
+        // ── Undo ──
+        function undoMove() {
+            if (gameOver) return;
+            if (isAIThinking) return;
+            const history = game.history({ verbose: true });
+            if (history.length === 0) return;
+            // Undo last move (player's move)
+            game.undo();
+            // If the previous move was AI, undo that too
+            if (history.length > 1) {
+                game.undo();
+            }
+            board.position(game.fen());
+            renderMoves();
+            updateStatus();
+            switchClock();
+            if (analysisMode) runStockfishAnalysis();
+            // Remove highlights
+            selectedSquare = null;
+            highlightLegalMoves();
+        }
+
+        // ── Flip ──
+        function flipBoard() {
+            board.flip();
+        }
+
+        // ── Resign ──
+        function resign() {
+            if (gameOver) return;
+            const winner = game.turn() === 'w' ? 'Black' : 'White';
+            statusBadge.innerHTML = `<span style="color:#e74c3c;">🏳</span> ${winner} wins by resignation.`;
+            gameOver = true;
+            stopClock();
+            playSound('gameEnd');
+        }
+
+        // ── Offer Draw ──
+        function offerDraw() {
+            if (gameOver) return;
+            // Simple: accept immediately for demo
+            statusBadge.innerHTML = '🤝 Draw agreed.';
+            gameOver = true;
+            stopClock();
+            playSound('gameEnd');
+        }
+
+        // ── PGN Export ──
+        function copyPGN() {
+            const pgn = game.pgn();
+            navigator.clipboard.writeText(pgn).then(() => {
+                alert('PGN copied to clipboard!');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = pgn;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('PGN copied!');
+            });
+        }
+
+        // ── Import PGN ──
+        function showImportModal() {
+            importModal.classList.add('active');
+            pgnInput.value = '';
+        }
+
+        function loadPGN() {
+            const pgn = pgnInput.value.trim();
+            if (!pgn) return;
+            try {
+                const newGame = new Chess();
+                newGame.load_pgn(pgn);
+                if (newGame.history().length === 0) throw new Error('No moves');
+                game = newGame;
+                moveHistory = game.history({ verbose: true });
+                board.position(game.fen());
+                renderMoves();
+                updateStatus();
+                // Reset clocks? keep current time
+                gameOver = false;
+                switchClock();
+                startClock();
+                importModal.classList.remove('active');
+                if (analysisMode) runStockfishAnalysis();
+                // If AI turn, schedule
+                if (game.turn() === aiColor) scheduleAIMove();
+            } catch (e) {
+                alert('Invalid PGN: ' + e.message);
+            }
+        }
+
+        // ── Toggle Analysis ──
+        function toggleAnalysis() {
+            analysisMode = !analysisMode;
+            if (analysisMode) {
+                initStockfish();
+                runStockfishAnalysis();
+                document.getElementById('btnAnalyze').classList.add('btn-primary');
+                document.getElementById('btnAnalyze').textContent = '🔍 Stop';
+            } else {
+                document.getElementById('btnAnalyze').classList.remove('btn-primary');
+                document.getElementById('btnAnalyze').textContent = '🔍 Analyze';
+                if (stockfish) stockfish.postMessage('stop');
+                analysisBox.innerHTML = '<p>♟ Analysis paused.</p>';
+            }
+        }
+
+        // ── Apply theme ──
+        function applyTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            currentPieceSet = theme;
+            // Recreate board with new piece theme
+            initBoard();
+            board.position(game.fen());
+            applyBoardColor();
+            renderMoves();
+            highlightLegalMoves();
+        }
+
+        // ── Event listeners ──
+        document.getElementById('btnFlip').addEventListener('click', flipBoard);
+        document.getElementById('btnUndo').addEventListener('click', undoMove);
+        document.getElementById('btnResign').addEventListener('click', resign);
+        document.getElementById('btnDraw').addEventListener('click', offerDraw);
+        document.getElementById('btnNew').addEventListener('click', resetGame);
+        document.getElementById('btnPGN').addEventListener('click', copyPGN);
+        document.getElementById('btnImportPGN').addEventListener('click', showImportModal);
+        document.getElementById('btnAnalyze').addEventListener('click', toggleAnalysis);
+        document.getElementById('btnScrollToEnd').addEventListener('click', () => {
+            movesListEl.scrollTop = movesListEl.scrollHeight;
+        });
+        document.getElementById('importCancel').addEventListener('click', () => {
+            importModal.classList.remove('active');
+        });
+        document.getElementById('importConfirm').addEventListener('click', loadPGN);
+        document.getElementById('btnApplyTheme').addEventListener('click', applyTheme);
+
+        // Time control change
+        document.getElementById('timeControl').addEventListener('change', function() {
+            const custom = document.getElementById('customTimeInputs');
+            if (this.value === 'custom') {
+                custom.style.display = 'flex';
+            } else {
+                custom.style.display = 'none';
+            }
+            // Reset game to apply new time
+            resetGame();
+        });
+
+        document.getElementById('minutesInput').addEventListener('change', resetGame);
+        document.getElementById('incrementInput').addEventListener('change', resetGame);
+        document.getElementById('aiLevel').addEventListener('change', function() {
+            aiLevel = parseInt(this.value);
+        });
+
+        // Board square click to select and show legal moves
+        document.addEventListener('click', function(e) {
+            const sq = e.target.closest('.square-55d63');
+            if (sq) {
+                const square = sq.dataset.square;
+                if (square) {
+                    const piece = game.get(square);
+                    if (piece && piece.color === playerColor && !gameOver && !isAIThinking) {
+                        selectedSquare = square;
+                        highlightLegalMoves();
+                    } else {
+                        // If clicking on a highlighted square, try to move there
+                        if (selectedSquare) {
+                            const move = game.move({
+                                from: selectedSquare,
+                                to: square,
+                                promotion: 'q'
+                            });
+                            if (move) {
+                                handleMove(move);
+                                selectedSquare = null;
+                                highlightLegalMoves();
+                            } else {
+                                selectedSquare = null;
+                                highlightLegalMoves();
+                            }
+                        }
+                    }
+                }
+            } else {
+                // click outside
+                selectedSquare = null;
+                highlightLegalMoves();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') resetGame();
+            if (e.key === 'f' || e.key === 'F') flipBoard();
+            if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                undoMove();
+            }
+            if (e.key === 'a' || e.key === 'A') toggleAnalysis();
+            if (e.key === 'p' || e.key === 'P') copyPGN();
+            if (e.key === 'i' || e.key === 'I') showImportModal();
+        });
+
+        // ── Init ──
+        initBoard();
+        resetGame();
+
+        console.log('♚ Lichess Ultimate Clone loaded — enjoy!');
+    </script>
+</body>
+</html>
